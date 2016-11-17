@@ -46,6 +46,7 @@ JNIEXPORT jlong JNICALL Java_me_lake_ffmpeg_FFmpeg_00024H264_create
     avCodecCtx->gop_size = 15;
     avCodecCtx->max_b_frames = 0;
     avCodecCtx->b_frame_strategy = 0;
+    avCodecCtx->bit_rate_tolerance = bitrate/3;
     avCodecCtx->time_base.num = 1;
     avCodecCtx->time_base.den = 30;
     avCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -69,7 +70,7 @@ JNIEXPORT jlong JNICALL Java_me_lake_ffmpeg_FFmpeg_00024H264_create
     avFrame->height = avCodecCtx->height;
 
     if (av_image_alloc(avFrame->data, avFrame->linesize, avFrame->width, avFrame->height,
-                       avFrame->format, 16) < 0) {
+                       avFrame->format, 32) < 0) {
         LOGD("ERROR!av_image_alloc()=NULL\n");
         return 0;
     }
@@ -110,8 +111,8 @@ JNIEXPORT jint JNICALL Java_me_lake_ffmpeg_FFmpeg_00024H264_encode
         LOGD("INFO!avcodec_encode_video2(),size=%d,pts=%ld\n", avPacket.size, avPacket.pts);
         encoderCallback2Java(env, callbackobj, avPacket.data, avPacket.size, avPacket.pts,
                              avPacket.dts);
+        av_packet_unref(&avPacket);
     }
-    av_free_packet(&avPacket);
     return 0;
 }
 
@@ -133,8 +134,8 @@ JNIEXPORT jint JNICALL Java_me_lake_ffmpeg_FFmpeg_00024H264_flush
             LOGD("INFO!avcodec_encode_video2(),packetsize=%ld\n", avPacket.size);
             encoderCallback2Java(env, callbackobj, avPacket.data, avPacket.size, avPacket.pts,
                                  avPacket.dts);
+            av_packet_unref(&avPacket);
         }
-        av_free_packet(&avPacket);
     } while (got_packet);
     return 0;
 }
