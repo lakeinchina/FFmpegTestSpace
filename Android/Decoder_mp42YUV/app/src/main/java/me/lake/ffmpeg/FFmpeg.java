@@ -15,9 +15,9 @@ public class FFmpeg {
 
     public static native NativeMediaData open(String filePath);
 
-    public static native int decodeNextFrame(long pointer,Surface surface);
+    public static native long decodeNextFrame(long pointer,Surface surface);
 
-    public static native int seekTo(long pointer,long time);
+    public static native long seekTo(long pointer,long timeSec);
 
-    public static native int close(long pointer);
+    public static native long close(long pointer);
 }

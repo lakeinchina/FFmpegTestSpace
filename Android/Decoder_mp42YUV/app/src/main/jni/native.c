@@ -118,6 +118,7 @@ JNIEXPORT jobject JNICALL Java_me_lake_ffmpeg_FFmpeg_open
 		LOGD("ERROR!avcodec_open2()<0\n");
 		return NULL;
 	}
+
 	//==================
 	float fps =(float)avFormatCtx->streams[videoTrackIndex]->avg_frame_rate.num/avFormatCtx->streams[videoTrackIndex]->avg_frame_rate.den;
 	int videoWidth,videoHeight;
@@ -176,10 +177,11 @@ JNIEXPORT jlong JNICALL Java_me_lake_ffmpeg_FFmpeg_decodeNextFrame
 			if(avcodec_decode_video2(avCodecCtx,avFrame,&got_frame,&avPacket)<0)
 			{
 				LOGD("ERROR!avcodec_decode_video2()<0\n");
-				ret = 1;
+				ret = (long long)-1;
 			}else{
+				int64_t timeBase=((int64_t)(decoder->avFormatCtx->streams[decoder->videoTrackIndex]->time_base.den)) / (int64_t)(decoder->avFormatCtx->streams[decoder->videoTrackIndex]->time_base.num);
 				LOGD("w=%d,h=%d,fmt=%d,name=%s",avFrame->width,avFrame->height,avFrame->format,av_get_pix_fmt_name(avFrame->format));
-				ret =0;
+				ret = avFrame->pkt_pts/timeBase;
 			}
 			if(got_frame)
 			{
@@ -188,19 +190,26 @@ JNIEXPORT jlong JNICALL Java_me_lake_ffmpeg_FFmpeg_decodeNextFrame
 					renderingSurface(env,surface,(const uint8_t **)(avFrame->data),decoder->width,decoder->height);
 				}
 				//av_image_copy(video_dst_data,video_dst_linesize,(const uint8_t **)(avFrame->data),avFrame->linesize,pix_fmt,videoWidth,videoHeight);
-				LOGD("INFO!got_frame\n");
+				LOGD("INFO!got_frame,%ld,%ld,%ld\n",avFrame->pts,avFrame->pkt_pts,avFrame->pkt_dts);
 				break;
 			}
 		}
 	}
-	return ret;
+	return (long long)ret;
 }
 
 JNIEXPORT jlong JNICALL Java_me_lake_ffmpeg_FFmpeg_seekTo
-(JNIEnv *env, jobject obj,jlong pointer) {
+(JNIEnv *env, jobject obj,jlong pointer,long timeSec) {
+	Decoder *decoder = (Decoder*)pointer;
+	//AVSEEK_FLAG_BACKWARD  seek backward
+	//AVSEEK_FLAG_BYTE      seeking based on position in bytes
+	//AVSEEK_FLAG_ANY       seek to any frame, even non-keyframes
+	//AVSEEK_FLAG_FRAME		seeking based on frame number
+	int64_t timeBase=((int64_t)(decoder->avFormatCtx->streams[decoder->videoTrackIndex]->time_base.den)) / (int64_t)(decoder->avFormatCtx->streams[decoder->videoTrackIndex]->time_base.num);
+	int ret = av_seek_frame(decoder->avFormatCtx,decoder->videoTrackIndex,timeSec*timeBase,AVSEEK_FLAG_BACKWARD);
+	//LOGD("timeBase=%ld,%lld,%lld,%ld\n",timeSec,timeBase,timeSec*timeBase,AV_TIME_BASE);
 	return 0;
 }
-
 JNIEXPORT jlong JNICALL Java_me_lake_ffmpeg_FFmpeg_close
 (JNIEnv *env, jobject obj,jlong pointer) {
 	Decoder *decoder = (Decoder*)pointer;
