@@ -16,6 +16,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := yuv2h264
 LOCAL_SRC_FILES := native.c
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
-LOCAL_LDLIBS := -llog -lz
+LOCAL_LDLIBS := -llog -ljnigraphics -landroid
 LOCAL_SHARED_LIBRARIES := ffmpeg
 include $(BUILD_SHARED_LIBRARY)
