@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         pcmPlayer.stop();
                         pcmPlayer.destroy();
+                        FFmpeg.close(nativeMediaData.nativePointer);
                     }
                 }.start();
 
